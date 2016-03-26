@@ -60,12 +60,12 @@ public class AlphaNDCG {
 	private static double computeDCG(List<Qrel> qrel_list, int k, double alpha) {
 		Iterator<Qrel> iterator = qrel_list.iterator();
 		double idcg = iterator.next().judgment;
-		int i = 2;
+		int i = 1;
 		double sum = 0.0;
-		while(i <= k && iterator.hasNext()) {
+		while(i+1 <= k && iterator.hasNext()) {
 			int score = iterator.next().judgment;
 			score = score >=0 ? score:0;
-			sum += ( (score * (1-alpha)) / ( Math.log(i) / Math.log(2) ) );
+			sum += ( (score * Math.pow((1-alpha), i)) / ( Math.log(1+i) / Math.log(2) ) );
 			i++;
 		}
 		return idcg + sum;
