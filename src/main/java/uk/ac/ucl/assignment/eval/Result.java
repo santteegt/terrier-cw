@@ -1,5 +1,10 @@
 package uk.ac.ucl.assignment.eval;
 
+/**
+ * Bean that represent a TREC-formatted result
+ * @author santteegt
+ *
+ */
 public class Result {
 	
 	String document_id;

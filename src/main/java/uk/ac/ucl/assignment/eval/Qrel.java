@@ -1,5 +1,10 @@
 package uk.ac.ucl.assignment.eval;
 
+/**
+ * Bean that represent a Qrel judgement
+ * @author santteegt
+ *
+ */
 public class Qrel {
 	
 	String document_id ;

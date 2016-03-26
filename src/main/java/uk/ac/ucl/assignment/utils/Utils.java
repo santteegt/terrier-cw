@@ -10,13 +10,10 @@ import java.util.Map;
 
 import org.terrier.matching.ResultSet;
 import org.terrier.structures.BitIndexPointer;
-import org.terrier.structures.DocumentIndex;
-import org.terrier.structures.DocumentIndexEntry;
 import org.terrier.structures.Index;
 import org.terrier.structures.Lexicon;
 import org.terrier.structures.LexiconEntry;
 import org.terrier.structures.MetaIndex;
-import org.terrier.structures.bit.DirectIndex;
 import org.terrier.structures.postings.IterablePosting;
 
 import uk.ac.ucl.assignment.eval.Qrel;
@@ -26,7 +23,7 @@ public class Utils {
 	public enum QREL {
 		ADHOC, DIVERSITY
 	}
-	/* 
+	/** 
 	 * Computes the hashmap with IDF of <term_id, term_idf>. 
 	 * @param total_index_documents : It is total number of documents in the index and final 
 	 * @param index_lexicon : It is the lexicon of the index. 
@@ -54,7 +51,8 @@ public class Utils {
 		return term_idf;
 	}
 
-	/* Return term idf. Calculates based on the formula
+	/**
+	 * Return term idf. Calculates based on the formula
 	 * log(N/df) where N = total documents in the collection.
 	 * 
 	 */
@@ -71,7 +69,7 @@ public class Utils {
 		return idf;
 	}
 
-	/*
+	/**
 	 * Returns the number of times a token appears in index. For example, term t1 has 
 	 * following frequency in 3 documents: d1=3, d2=4, d3=5
 	 * then total term frequency of t1 in index is 3+4+5 = 12.
@@ -84,7 +82,7 @@ public class Utils {
 			return 0;
 	}
 
-	/*
+	/**
 	 * Returns the frequency of a token normalized by total number of tokens 
 	 * in index. For example, an index has following term distribution:
 	 * t1=12, t2=20, t3=50. 
@@ -135,7 +133,8 @@ public class Utils {
 
 	}
 
-	/** Generates a map of terms in the document and its within document term frequencies.
+	/**
+	 * Generates a map of terms in the document and its within document term frequencies.
 	 * 
 	 * @param docid
 	 * 
@@ -159,8 +158,14 @@ public class Utils {
 		}
 		return map;
 	}
-	
-	/** method which extracts the docnos for the prescribed resultset */
+
+	/**
+	 * method which extracts the docnos for the prescribed resultset
+	 * @param metaIndexDocumentKey
+	 * @param set
+	 * @param index
+	 * @return
+	 */
 	public static String[] getDocnos(final String metaIndexDocumentKey, final ResultSet set, final Index index) 	
 	{
 		String[] docnos= null;

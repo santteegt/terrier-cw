@@ -39,14 +39,7 @@ public class NDCG {
 			if(i == k) break;
 			else i++;
 		}
-//		System.out.println("===Size of qrels: " + docsQrels.size());
-		//return computeDCG(qrel_list, k) / computeIDCG((ArrayList<Qrel>)qrel_list, k);
-//		if(topicNo.equals("202")) {
-//			System.out.println();
-//		}
-//		if(k == 30){
-//			System.out.println();
-//		}
+
 		double dcg = computeDCG(docsQrels, k);
 		double idcg = computeIDCG((ArrayList<Qrel>)docsQrels, k);
 		return  idcg != 0.0 ? (dcg / idcg):0.0;

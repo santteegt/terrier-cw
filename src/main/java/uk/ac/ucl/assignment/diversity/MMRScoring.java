@@ -4,24 +4,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
-import java.util.TreeMap;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.terrier.indexing.tokenisation.Tokeniser;
 import org.terrier.matching.ResultSet;
 import org.terrier.querying.Manager;
 import org.terrier.querying.SearchRequest;
-import org.terrier.structures.DocumentIndex;
-import org.terrier.structures.Index;
-import org.terrier.structures.Lexicon;
 import org.terrier.utility.ApplicationSetup;
 
 import uk.ac.ucl.assignment.utils.SimpleScoring;
@@ -34,19 +26,6 @@ import uk.ac.ucl.assignment.utils.Utils;
  *
  */
 public class MMRScoring extends SimpleScoring {
-
-	/* Terrier Index */
-//	Index index;
-	
-	/* Index structures*/
-	/* list of terms in the index */
-//	Lexicon<String> term_lexicon = null;
-	/* list of documents in the index */
-//	DocumentIndex doi = null;
-	
-	/* Collection statistics */
-//	long total_tokens;
-//	long total_documents;
 	
 	private HashMap<Integer, Float> termsIDF;
 	
@@ -63,9 +42,7 @@ public class MMRScoring extends SimpleScoring {
 		super.term_lexicon = super.index.getLexicon();
 		System.out.print("Number of entries: " + super.term_lexicon.numberOfEntries());
 		long time = System.currentTimeMillis();
-		for(int i=0;i<100;i++) {
-			System.out.println(super.term_lexicon.getIthLexiconEntry(i).getKey());
-		}
+
 		this.termsIDF = Utils.populateTermIDFMap(super.total_documents, super.term_lexicon);
 		System.out.println("IDF terms for collection loaded in :" + (System.currentTimeMillis()-time)/1000 + " seconds.");
 		
@@ -90,23 +67,22 @@ public class MMRScoring extends SimpleScoring {
 			docIDFCache.put(document_id2, docjTF);
 		}
 		 
-//		HashMap<Integer, Integer> docjTF = Utils.docTF(document_id2, super.index);
-		double normq = 0.0;
-		double normd = 0.0;
+		double normd1 = 0.0;
+		double normd2 = 0.0;
 		Double sum = 0.0;
 		for(Integer termjId: docjTF.keySet()) {
 			Integer tf_in_i = dociTF.get(termjId) == null ? 0:dociTF.get(termjId);
 			Float idf_in_i = this.termsIDF.get(termjId) == null ? 0:this.termsIDF.get(termjId);
-			Double qscore = tf_in_i == 0 ? 0:(1 + Math.log10(tf_in_i) ) * idf_in_i;
-			Double dscore = (1 + Math.log10(docjTF.get(termjId)) );
-			sum += qscore * dscore;
-			normq += Math.pow(qscore, 2);
-			normd += Math.pow(dscore, 2);
+			Double d1Score = tf_in_i == 0 ? 0:(1 + Math.log10(tf_in_i) ) * idf_in_i;
+			Double d2Score = (1 + Math.log10(docjTF.get(termjId)) );
+			sum += d1Score * d2Score;
+			normd1 += Math.pow(d1Score, 2);
+			normd2 += Math.pow(d2Score, 2);
 		}
 		
-		normq = Math.sqrt(normq);
-		normd = Math.sqrt(normd);
-		return sum / (normq * normd);
+		normd1 = Math.sqrt(normd1);
+		normd2 = Math.sqrt(normd2);
+		return sum / (normd1 * normd2);
 		
 	}
 	
@@ -118,7 +94,7 @@ public class MMRScoring extends SimpleScoring {
 	 * @return
 	 */
 	private double scoreDocumentWrtList(int document_id, Map<Integer, Integer> queryTF, List<Integer> result_list) {
-		double maxSimScore = Double.MIN_VALUE;
+		double maxSimScore = 0.0;
 		for(Integer docjId: result_list) {
 			double simScore = this.getSimilarity(document_id, docjId);
 			if(simScore > maxSimScore) maxSimScore = simScore;
@@ -134,20 +110,16 @@ public class MMRScoring extends SimpleScoring {
 	 * @param lambda
 	 * @return
 	 */
+	@SuppressWarnings("unused")
 	@Deprecated
-//	public double scoreDocument(int document_id, String query, double lambda) {
 	private double scoreDocument(int document_id, Map<Integer, Integer> queryTF, double lambda) {
 		HashMap<Integer, Integer> docTF = Utils.docTF(document_id, super.index);
-//		List<Double> qscoreVector = new ArrayList<>();
-//		List<Double> dscoreVector = new ArrayList<>();
 		double normq = 0.0;
 		double normd = 0.0;
 		Double sum = 0.0;
 		for(Integer termId:docTF.keySet()) {
 			Double qscore = (1 + Math.log10(queryTF.get(termId)) ) * this.termsIDF.get(termId);
 			Double dscore = (1 + Math.log10(docTF.get(termId)) );
-//			qscoreVector.add(qscore);
-//			dscoreVector.add(dscore);
 			sum += qscore * dscore;
 			normq += Math.pow(qscore, 2);
 			normd += Math.pow(dscore, 2);
@@ -155,10 +127,6 @@ public class MMRScoring extends SimpleScoring {
 		}
 		normq = Math.sqrt(normq);
 		normd = Math.sqrt(normd);
-//		Double []qScores = qscoreVector.toArray(new Double[qscoreVector.size()]);
-//		Double []dScores = dscoreVector.toArray(new Double[dscoreVector.size()]);
-		
-//		for(int i=0;i<qScores.length;i++) sum += qScores[i] * dScores[i];
 		
 		return lambda * (sum / (normq * normd));
 	}
@@ -182,13 +150,12 @@ public class MMRScoring extends SimpleScoring {
 		ResultSet set = srq.getResultSet();
 		int doc_ids [] = set.getDocids();
 		double doc_scores [] = set.getScores();
-		//double doc_scores [] = set.getScores();
 		final String metaIndexDocumentKey = ApplicationSetup.getProperty(
 				"trec.querying.outputformat.docno.meta.key", "filename");
 		String doc_names [] = Utils.getDocnos(metaIndexDocumentKey, set, index);
 		
 		
-		HashMap<String, Double> scores  = new HashMap<>();//super.buildResultSet(id, query);
+		HashMap<String, Double> scores  = new HashMap<>();
 		
 		
 		StringTokenizer queryTokens = new StringTokenizer(query);
@@ -227,7 +194,6 @@ public class MMRScoring extends SimpleScoring {
 
 			@Override
 			public int compare(Entry<String, Double> o1, Entry<String, Double> o2) {
-				// TODO Auto-generated method stub
 				return o1.getValue() < o2.getValue() ? 1:(o1.getValue() > o2.getValue() ? -1:0);
 			}
 		});
