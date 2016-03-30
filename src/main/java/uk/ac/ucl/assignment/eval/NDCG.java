@@ -45,6 +45,12 @@ public class NDCG {
 		return  idcg != 0.0 ? (dcg / idcg):0.0;
 	}
 	
+	/**
+	 * computes the Ideal Document Cumulative Gain
+	 * @param qrel_list list of judgement scores
+	 * @param k number of documents to evaluate
+	 * @return
+	 */
 	static double computeIDCG(ArrayList<Qrel> qrel_list, int k) {
 		List<Qrel> sortedQrelList = (ArrayList<Qrel>)qrel_list.clone();
 		
@@ -58,6 +64,12 @@ public class NDCG {
 		return computeDCG(sortedQrelList, k);
 	}
 	
+	/**
+	 * Computes the Document Cumulative Gain
+	 * @param qrel_list list of judgement scores
+	 * @param k number of documents to evaluate
+	 * @return
+	 */
 	private static double computeDCG(List<Qrel> qrel_list, int k) {
 		Iterator<Qrel> iterator = qrel_list.iterator();
 		double idcg = iterator.next().judgment;

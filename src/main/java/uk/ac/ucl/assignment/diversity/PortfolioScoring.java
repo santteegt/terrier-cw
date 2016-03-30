@@ -62,13 +62,13 @@ public class PortfolioScoring extends SimpleScoring {
 		for(Integer termjId: docjTF.keySet()) {
 			Integer tf_in_i = dociTF.get(termjId) == null ? 0:dociTF.get(termjId);
 			Float idf_in_i = this.termsIDF.get(termjId) == null ? 0:this.termsIDF.get(termjId);
-			d1Weights[i] = tf_in_i == 0 ? 0:(1 + Math.log10(tf_in_i) ) * idf_in_i;
+			d1Weights[i] = tf_in_i == 0 ? 0:(1 + Math.log10(tf_in_i) ) * idf_in_i; //ter
 			d2Weights[i] = (1 + Math.log10(docjTF.get(termjId)) );
 			meanWd1 += d1Weights[i];
 			meanWd2 += d2Weights[i];
 		}
-		meanWd1 = meanWd1 / n;
-		meanWd2 = meanWd2 / n;
+		meanWd1 = meanWd1 / n; //get the mean of the doc1 terms vector 
+		meanWd2 = meanWd2 / n; //get the mean of the doc2 terms vector
 		
 		for(int k=0; k<n; k++) {
 			sum += (d1Weights[i] - meanWd1) * (d2Weights[i] - meanWd2); 
@@ -78,7 +78,7 @@ public class PortfolioScoring extends SimpleScoring {
 		
 		normd1 = Math.sqrt(normd1);
 		normd2 = Math.sqrt(normd2);
-		return discount * 1 * (sum / (normd1 * normd2));
+		return discount * 1 * (sum / (normd1 * normd2)); //pearson correlation multiplied by the discount
 	}
 
 
@@ -149,14 +149,15 @@ public class PortfolioScoring extends SimpleScoring {
 		
 		HashMap<String, Double> scores  = new HashMap<>();
 
+		double maxScore = doc_scores.length > 0 ? doc_scores[0]: 0.0;
 		List<Integer> dq = new ArrayList<>(); 
 		for(int i=0; i<doc_ids.length; i++) {
 			Integer docId = doc_ids[i];
-			double mean_d = doc_scores[i];
+			double mean_d = doc_scores[i] / maxScore; //normalized score
 			double docSimScore = this.scoreDocument(docId, dq);
-			double discount = i+1== 1 ? 1:1/(Math.log10(i+1)/Math.log(2));
-			double variance_d = this.computeVariance(docId, dq);
-			double fmvaScore = mean_d - (b*discount*variance_d) - (2*b*Math.sqrt(variance_d)*docSimScore);
+			double discount = i+1== 1 ? 1:1/(Math.log10(i+1)/Math.log(2)); //discount weights by rank position
+			double variance_d = this.computeVariance(docId, dq); //variance is always 1
+			double fmvaScore = mean_d - (b*discount*variance_d) - (2*b*Math.sqrt(variance_d)*docSimScore); //portfolio
 			
 			String docName = doc_names[i].lastIndexOf("/") > 0  ? 
 					 doc_names[i].substring(doc_names[i].lastIndexOf("/")+1, doc_names[i].lastIndexOf("."))

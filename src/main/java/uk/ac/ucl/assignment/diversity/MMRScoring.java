@@ -9,7 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.StringTokenizer;
 
 import org.terrier.matching.ResultSet;
 import org.terrier.querying.Manager;
@@ -59,12 +58,12 @@ public class MMRScoring extends SimpleScoring {
 		Map<Integer, Integer> dociTF = docIDFCache.get(document_id1);
 		if(dociTF == null) {
 			dociTF = Utils.docTF(document_id1, super.index);
-			docIDFCache.put(document_id1, dociTF);
+			docIDFCache.put(document_id1, dociTF); //doc term frequencies are cached in order to improve performance
 		}
 		Map<Integer, Integer> docjTF = docIDFCache.get(document_id2);
 		if(docjTF == null) {
 			docjTF = Utils.docTF(document_id2, super.index);
-			docIDFCache.put(document_id2, docjTF);
+			docIDFCache.put(document_id2, docjTF); //doc term frequencies are cached in order to improve performance
 		}
 		 
 		double normd1 = 0.0;
@@ -75,14 +74,14 @@ public class MMRScoring extends SimpleScoring {
 			Float idf_in_i = this.termsIDF.get(termjId) == null ? 0:this.termsIDF.get(termjId);
 			Double d1Score = tf_in_i == 0 ? 0:(1 + Math.log10(tf_in_i) ) * idf_in_i;
 			Double d2Score = (1 + Math.log10(docjTF.get(termjId)) );
-			sum += d1Score * d2Score;
+			sum += d1Score * d2Score; //dot product between d1 and d2 scores
 			normd1 += Math.pow(d1Score, 2);
 			normd2 += Math.pow(d2Score, 2);
 		}
 		
-		normd1 = Math.sqrt(normd1);
-		normd2 = Math.sqrt(normd2);
-		return sum / (normd1 * normd2);
+		normd1 = Math.sqrt(normd1); //norm of d1 term vector
+		normd2 = Math.sqrt(normd2); //norm of d2 term vector
+		return sum / (normd1 * normd2); //cosine similarity measure 
 		
 	}
 	
@@ -93,13 +92,13 @@ public class MMRScoring extends SimpleScoring {
 	 * @param result_list
 	 * @return
 	 */
-	private double scoreDocumentWrtList(int document_id, Map<Integer, Integer> queryTF, List<Integer> result_list) {
+	private double scoreDocumentWrtList(int document_id, List<Integer> result_list) {
 		double maxSimScore = 0.0;
-		for(Integer docjId: result_list) {
+		for(Integer docjId: result_list) { //iterate over the retrieved documents
 			double simScore = this.getSimilarity(document_id, docjId);
 			if(simScore > maxSimScore) maxSimScore = simScore;
 		}
-		return maxSimScore;
+		return maxSimScore; //return the max score
 	}
 	
 	/**
@@ -132,7 +131,7 @@ public class MMRScoring extends SimpleScoring {
 	}
 	
 	/**
-	 * 
+	 * Computes the MMR Scoring of a related query
 	 * @param id
 	 * @param query
 	 * @param lambda
@@ -156,27 +155,15 @@ public class MMRScoring extends SimpleScoring {
 		
 		
 		HashMap<String, Double> scores  = new HashMap<>();
-		
-		
-		StringTokenizer queryTokens = new StringTokenizer(query);
-		Map <Integer, Integer> queryTF = new HashMap<>();
-		while(queryTokens.hasMoreTokens()) {
-			String token = queryTokens.nextToken().toLowerCase();
-			if(super.term_lexicon.getLexiconEntry(token) != null) {
-				Integer tokenId = super.term_lexicon.getLexiconEntry(token).getTermId(); 
-				queryTF.put(tokenId, queryTF.get(token) == null ? 1:queryTF.get(token) + 1);
-			}
-			
-		}
 
-		List<Integer> dq = new ArrayList<>(); 
+		List<Integer> dq = new ArrayList<>();
+		double maxScore = doc_scores.length > 0 ? doc_scores[0]: 0.0;
 		for(int i=0; i<doc_ids.length; i++) {
 			Integer docId = doc_ids[i];
-			//double docQueryScore = this.scoreDocument(docId, queryTF, lambda);
-			double docQueryScore = doc_scores[i];
-			double docSimScore = this.scoreDocumentWrtList(docId, queryTF, dq);
+			double docQueryScore = doc_scores[i] / maxScore; //normalized score
+			double docSimScore = this.scoreDocumentWrtList(docId, dq); //get the document similarity score
 			
-			double mmrScore = (lambda*docQueryScore) - ((1 - lambda)*docSimScore);
+			double mmrScore = (lambda*docQueryScore) - ((1 - lambda)*docSimScore); //mmr formula
 			
 			String docName = doc_names[i].lastIndexOf("/") > 0  ? 
 					 doc_names[i].substring(doc_names[i].lastIndexOf("/")+1, doc_names[i].lastIndexOf("."))
